@@ -40,13 +40,13 @@ sub mapper {
     my $config = $plugin->get_config_hash('blog:' . $blog->id) or return;
 
     %$config = (%$config, %$args);
+    $config->{unique} = $ctx->stash('entry')->id
+	if defined $ctx->stash('entry');
     my $mapper_class = __PACKAGE__ . '::' . ($args->{method} || 'Google');
     my $mapper = $mapper_class->new($config);
 
     defined(my $html = $ctx->stash('builder')->build($ctx, $ctx->stash('tokens'), $cond)) or return;
-
-#    $html =~ s!(?:<p>|<div>|<div\s+[^>]+>)?\s*\[map:([^]]+)\]\s*(?:</p>|</div>)?!$mapper->generate($1)!ge;
-    $html =~ s!(?:<p>)\s*\[map:([^]]+)\]\s*(?:</p>)!$mapper->generate($1)!ge;
+    $html =~ s!(?:<div\s+[^<]*class="adr"[^<]*>\s*([^<]+)\s*</div>)|(?:<p>\s*\[map:([^]]+)\]\s*</p>)!$mapper->generate($1||$2)!ge;
     $html;
 }
 
@@ -69,6 +69,7 @@ package MT::Plugin::Mapper::Google;
 
 use strict;
 use MT::Util qw(encode_url);
+use MT::ConfigMgr;
 use LWP::Simple;
 use HTML::Template;
 
@@ -76,7 +77,10 @@ sub new {
     my $class = shift;
     my($config) = @_;
     $config->{count} = 0;
-    $config->{unique} = int(rand(65536));
+    my $cfg = MT::ConfigMgr->instance;
+    $config->{language} ||= $cfg->DefaultLanguage;
+    $config->{charset} ||= $cfg->PublishCharset;
+    $config->{unique} ||= int(rand(65536));
     bless $config, $class;
 }
 
@@ -86,7 +90,7 @@ sub generate {
     my $this = shift;
     my($address) = @_;
     my ($lat, $lon) = eval { $this->resolve_address($address) };
-    return "<p>Sorry, this address \"$address\" cannot be resolved.</p>\n" if $@;
+    return "<div class=\"adr\">$address (Sorry, this address cannot be resolved.)</div>" if $@;
     my $res = '';
     $res .= $this->preamble unless $this->{count};
     $res .= $this->body($lat, $lon, $address);
@@ -97,7 +101,11 @@ sub generate {
 sub resolve_address {
     my $this = shift;
     my($address) = @_;
-    my $res = get('http://maps.google.co.jp/maps?q=' . encode_url($address) . '&output=kml');
+    my $geo_url = $this->{language} eq 'ja' ?
+	'http://maps.google.co.jp/maps?q=' : 'http://maps.google.com/maps?q=';
+    $geo_url .= encode_url($address) . '&output=kml';
+    $geo_url .= '&ie=' . $this->{charset} . '&oe=' . $this->{charset};
+    my $res = get($geo_url);
     if ($res && $res =~ /coordinates>([0-9.]+),([0-9.]+),/is) {
 	return ($2, $1);
     } else {
@@ -105,9 +113,7 @@ sub resolve_address {
     }
 }
 
-sub preamble {
-    my $this = shift;
-    my $preamble_tmpl = <<'EOT';
+my $preamble_tmpl = <<'EOT';
 <script type="text/javascript" src="http://maps.google.com/maps?file=api&v=1.28&key=<TMPL_VAR NAME="google_maps_key">"></script>
 <script type="text/javascript">
 //<![CDATA[
@@ -145,17 +151,16 @@ function generateGMap(mapid, address, latitude, longitude, maptype, zoom) {
 //]]>
 </script>
 EOT
+
+sub preamble {
+    my $this = shift;
     my $tmpl = HTML::Template->new(scalarref => \$preamble_tmpl);
     $tmpl->param(google_maps_key => $this->{google_maps_key});
     $tmpl->output;
 }
 
-sub body {
-    my $this = shift;
-    my($lat, $lon, $address) = @_;
-    $address =~ s/:.*$//;
-    my $body_tmpl = <<'EOT';
-<div id="<TMPL_VAR NAME="mapid">" style="width:<TMPL_VAR NAME="width">;height:<TMPL_VAR NAME="height">;"></div>
+my $body_tmpl = <<'EOT';
+<div id="<TMPL_VAR NAME="mapid">" style="width:<TMPL_VAR NAME="width">;height:<TMPL_VAR NAME="height">;" class="adr"><TMPL_VAR NAME="address"></div>
 <script type="text/javascript">
 //<![CDATA[
 attachOnLoad(function() {
@@ -164,6 +169,11 @@ attachOnLoad(function() {
 //]]>
 </script>
 EOT
+
+sub body {
+    my $this = shift;
+    my($lat, $lon, $address) = @_;
+    $address =~ s/:.*$//;
     my $tmpl = HTML::Template->new(scalarref => \$body_tmpl);
     $tmpl->param(
 		 mapid => "MTPluginMapperGoogle-" . $this->{unique} . '-' . $this->{count},
