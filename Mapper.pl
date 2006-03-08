@@ -115,7 +115,7 @@ sub resolve_address {
 }
 
 my $preamble_tmpl = <<'EOT';
-<script type="text/javascript" src="http://maps.google.com/maps?file=api&v=1.28&key=<TMPL_VAR NAME="google_maps_key">"></script>
+<script type="text/javascript" src="http://maps.google.com/maps?file=api&v=1.28&key=<TMPL_VAR NAME="google_maps_key">" charset="utf-8"></script>
 <script type="text/javascript">
 //<![CDATA[
 function attachOnLoad(func) {
