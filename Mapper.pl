@@ -12,6 +12,7 @@ package MT::Plugin::Mapper;
 use strict;
 use MT;
 use MT::Template::Context;
+use MT::ConfigMgr;
 use base 'MT::Plugin';
 use vars qw($VERSION);
 
@@ -42,6 +43,10 @@ sub mapper {
     %$config = (%$config, %$args);
     $config->{unique} = $ctx->stash('entry')->id
 	if defined $ctx->stash('entry');
+    my $cfg = MT::ConfigMgr->instance;
+    $config->{language} ||= $cfg->DefaultLanguage;
+    $config->{charset} ||= $cfg->PublishCharset;
+
     my $mapper_class = __PACKAGE__ . '::' . ($args->{method} || 'Google');
     my $mapper = $mapper_class->new($config);
 
@@ -69,7 +74,6 @@ package MT::Plugin::Mapper::Google;
 
 use strict;
 use MT::Util qw(encode_url);
-use MT::ConfigMgr;
 use LWP::Simple;
 use HTML::Template;
 
@@ -77,9 +81,6 @@ sub new {
     my $class = shift;
     my($config) = @_;
     $config->{count} = 0;
-    my $cfg = MT::ConfigMgr->instance;
-    $config->{language} ||= $cfg->DefaultLanguage;
-    $config->{charset} ||= $cfg->PublishCharset;
     $config->{unique} ||= int(rand(65536));
     bless $config, $class;
 }
@@ -118,8 +119,8 @@ my $preamble_tmpl = <<'EOT';
 <script type="text/javascript">
 //<![CDATA[
 function attachOnLoad(func) {
-    var old = window['onload'];
-    window['onload'] = (typeof old != 'function') ?
+    var old = window.onload;
+    window.onload = (typeof old != 'function') ?
 	func : function(evt) { old(evt); return func(evt); };
 }
 function generateGMap(mapid, address, latitude, longitude, maptype, zoom) {
@@ -133,7 +134,7 @@ function generateGMap(mapid, address, latitude, longitude, maptype, zoom) {
 	icon.infoWindowAnchor = new GPoint(5, 1);
 
 	var map = new GMap(document.getElementById(mapid));
-	map.setMapType(maptype);
+	map.setMapType((typeof maptype == 'string') ? eval(maptype) : maptype);
 	map.addControl(new GSmallMapControl());
 	map.addControl(new GMapTypeControl());
 	var point = new GPoint(longitude, latitude);
@@ -164,7 +165,7 @@ my $body_tmpl = <<'EOT';
 <script type="text/javascript">
 //<![CDATA[
 attachOnLoad(function() {
-    generateGMap('<TMPL_VAR NAME="mapid">','<TMPL_VAR NAME="address">',<TMPL_VAR NAME="latitude">,<TMPL_VAR NAME="longitude">,<TMPL_VAR NAME="maptype">,<TMPL_VAR NAME="zoom">);
+    generateGMap('<TMPL_VAR NAME="mapid">','<TMPL_VAR NAME="address">',<TMPL_VAR NAME="latitude">,<TMPL_VAR NAME="longitude">,'<TMPL_VAR NAME="maptype">',<TMPL_VAR NAME="zoom">);
 });
 //]]>
 </script>
@@ -173,7 +174,7 @@ EOT
 sub body {
     my $this = shift;
     my($lat, $lon, $address) = @_;
-    $address =~ s/:.*$//;
+    ($address) = split(/:/, $address);
     my $tmpl = HTML::Template->new(scalarref => \$body_tmpl);
     $tmpl->param(
 		 mapid => "MTPluginMapperGoogle-" . $this->{unique} . '-' . $this->{count},
