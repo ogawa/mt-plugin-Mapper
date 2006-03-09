@@ -115,7 +115,7 @@ sub resolve_address {
 }
 
 my $preamble_tmpl = <<'EOT';
-<script type="text/javascript" src="http://maps.google.com/maps?file=api&v=1.28&key=<TMPL_VAR NAME="google_maps_key">" charset="utf-8"></script>
+<script type="text/javascript" src="http://maps.google.com/maps?<TMPL_IF NAME="language">hl=<TMPL_VAR NAME="language">&</TMPL_IF>file=api&v=2&key=<TMPL_VAR NAME="google_maps_key">" charset="utf-8"></script>
 <script type="text/javascript">
 //<![CDATA[
 function attachOnLoad(func) {
@@ -156,7 +156,10 @@ EOT
 sub preamble {
     my $this = shift;
     my $tmpl = HTML::Template->new(scalarref => \$preamble_tmpl);
-    $tmpl->param(google_maps_key => $this->{google_maps_key});
+    $tmpl->param(
+		 google_maps_key => $this->{google_maps_key},
+		 language => $this->{language} || ''
+		 );
     $tmpl->output;
 }
 
