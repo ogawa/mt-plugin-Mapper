@@ -51,7 +51,7 @@ sub mapper {
     my $mapper = $mapper_class->new($config);
 
     defined(my $html = $ctx->stash('builder')->build($ctx, $ctx->stash('tokens'), $cond)) or return;
-    $html =~ s!(?:<div\s+[^<]*class="adr"[^<]*>\s*([^<]+)\s*</div>)|(?:<p>\s*\[map:([^]]+)\]\s*</p>)!$mapper->generate($1||$2)!ge;
+    $html =~ s!(?:<(?:div|p)\s+[^<>]*class="adr"[^<>]*>\s*([^<>]+)\s*</(?:div|p)>)|(?:<(?:div|p)[^<>]*>\s*\[map:([^]]+)\]\s*</(?:div|p)>)!$mapper->generate($1||$2)!ge;
     $html;
 }
 
@@ -90,6 +90,7 @@ sub DESTROY { }
 sub generate {
     my $this = shift;
     my($address) = @_;
+    $address =~ s/(^\s+|\s+$)//g;
     my ($lat, $lon) = eval { $this->resolve_address($address) };
     return "<div class=\"adr\">$address (Sorry, this address cannot be resolved.)</div>" if $@;
     my $res = '';
@@ -121,7 +122,7 @@ my $preamble_tmpl = <<'EOT';
 function attachOnLoad(func) {
     var old = window.onload;
     window.onload = (typeof old != 'function') ?
-	func : function(evt) { old(evt); return func(evt); };
+	func : function(e) { old(e); return func(e); };
 }
 function generateGMap(mapid, address, latitude, longitude, maptype, zoom) {
     if (GBrowserIsCompatible()) {
@@ -211,6 +212,7 @@ sub DESTROY { }
 sub generate {
     my $this = shift;
     my($address) = @_;
+    $address =~ s/(^\s+|\s+$)//g;
     my($adr, $opt) = split(/:/, $address);
     $adr = MT::I18N::encode_text($adr, '', 'euc-jp') || '';
     $adr = MT::Util::encode_url($adr);
