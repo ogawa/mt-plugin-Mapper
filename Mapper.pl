@@ -17,7 +17,7 @@ use base 'MT::Plugin';
 use vars qw($VERSION);
 
 sub BEGIN {
-    $VERSION = '0.10.$Rev$';
+    $VERSION = '0.10 ($Rev$)';
     my $plugin = MT::Plugin::Mapper->new({
 	name => 'Mapper',
 	version => $VERSION,
