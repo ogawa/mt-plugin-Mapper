@@ -17,7 +17,7 @@ use base 'MT::Plugin';
 use vars qw($VERSION);
 
 sub BEGIN {
-    $VERSION = '0.03';
+    $VERSION = '0.10.$Rev$';
     my $plugin = MT::Plugin::Mapper->new({
 	name => 'Mapper',
 	version => $VERSION,
@@ -89,26 +89,35 @@ sub DESTROY { }
 
 sub generate {
     my $this = shift;
-    my($address) = @_;
-    $address =~ s/(^\s+|\s+$)//g;
-    my ($lat, $lon) = eval { $this->resolve_address($address) };
-    return "<div class=\"adr\">$address (Sorry, this address cannot be resolved.)</div>" if $@;
+    my($s) = @_;
+    my($adr, $opt) = split(/:/, $s);
+    $adr =~ s/^\s+//;
+    $adr =~ s/\s+$//;
+    my ($lat, $lon);
+    if ($adr =~ m!^x([-.\d]+)y([-.\d]+)$!) {		# map:x<lon>y<lat>
+	($lat, $lon) = ($2, $1);
+    } elsif ($adr =~ m!^([-.\d]+),\s*([-.\d]+)$!) {	# map:<lat>,<lon>
+	($lat, $lon) = ($1, $2);
+    } else {
+	($lat, $lon) = eval { $this->resolve_address($adr) };
+	return "<div class=\"adr\">$adr (Sorry, this address cannot be resolved.)</div>" if $@;
+    }
     my $res = '';
     $res .= $this->preamble unless $this->{count};
-    $res .= $this->body($lat, $lon, $address);
+    $res .= $this->body($lat, $lon, $adr);
     $this->{count}++;
     $res;
 }
 
 sub resolve_address {
     my $this = shift;
-    my($address) = @_;
+    my($adr) = @_;
     my $geo_url = $this->{language} eq 'ja' ?
 	'http://maps.google.co.jp/maps?q=' : 'http://maps.google.com/maps?q=';
-    $geo_url .= encode_url($address) . '&output=kml';
+    $geo_url .= encode_url($adr) . '&output=kml';
     $geo_url .= '&ie=' . $this->{charset} . '&oe=' . $this->{charset};
     my $res = get($geo_url);
-    if ($res && $res =~ /coordinates>([0-9.]+),([0-9.]+),/is) {
+    if ($res && $res =~ /coordinates>([-.\d]+),([-.\d]+),/is) {
 	return ($2, $1);
     } else {
 	die "Cannot obtain the coordinates for this address.";
@@ -116,7 +125,7 @@ sub resolve_address {
 }
 
 my $preamble_tmpl = <<'EOT';
-<script type="text/javascript" src="http://maps.google.com/maps?<TMPL_IF NAME="language">hl=<TMPL_VAR NAME="language">&</TMPL_IF>file=api&v=2&key=<TMPL_VAR NAME="google_maps_key">" charset="utf-8"></script>
+<script type="text/javascript" src="http://maps.google.com/maps?<TMPL_IF NAME="language">hl=<TMPL_VAR NAME="language">&</TMPL_IF>file=api&v=1&key=<TMPL_VAR NAME="google_maps_key">" charset="utf-8"></script>
 <script type="text/javascript">
 //<![CDATA[
 function attachOnLoad(func) {
@@ -177,8 +186,7 @@ EOT
 
 sub body {
     my $this = shift;
-    my($lat, $lon, $address) = @_;
-    ($address) = split(/:/, $address);
+    my($lat, $lon, $adr) = @_;
     my $tmpl = HTML::Template->new(scalarref => \$body_tmpl);
     $tmpl->param(
 		 mapid => "MTPluginMapperGoogle-" . $this->{unique} . '-' . $this->{count},
@@ -186,7 +194,7 @@ sub body {
 		 height => $this->{height} || '300px',
 		 latitude => $lat,
 		 longitude => $lon,
-		 address => $address,
+		 address => $adr,
 		 maptype => $this->{maptype} || 'G_MAP_TYPE',
 		 zoom => (defined $this->{zoom}) ? $this->{zoom} : 4
 		 );
@@ -211,10 +219,22 @@ sub DESTROY { }
 
 sub generate {
     my $this = shift;
-    my($address) = @_;
-    $address =~ s/(^\s+|\s+$)//g;
-    my($adr, $opt) = split(/:/, $address);
-    $adr = MT::I18N::encode_text($adr, '', 'euc-jp') || '';
+    my($s) = @_;
+    $s =~ s/^\s+//;
+    $s =~ s/\s+$//;
+    my($str, $opt) = split(/:/, $s);
+
+    my $pos = '';
+    if ($str =~ m!^x([-.\d]+)y([-.\d]+)$!) {		# map:x<lon>y<lat>
+	$pos = "$2,$1";
+    } elsif ($str =~ m!^([-.\d]+),\s*([-.\d]+)$!) {	# map:<lat>,<lon>
+	$pos = $str;
+    }
+    if ($pos) {
+	return qq[<p><a target="_blank" href="http://clip.alpslab.jp/bin/rd?pos=$pos"><img class="alpslab-clip" src="http://clip.alpslab.jp/bin/map?pos=$pos&opt=$opt" alt="$str" title="$str" /></a></p>];
+    }
+
+    my $adr = MT::I18N::encode_text($str, '', 'euc-jp') || '';
     $adr = MT::Util::encode_url($adr);
-    qq[<p><a target="_blank" href="http://clip.alpslab.jp/bin/rd?adr=$adr"><img class="alpslab-clip" src="http://clip.alpslab.jp/bin/map?adr=$adr&opt=$opt" alt="$address" title="$address" /></a></p>];
+    qq[<p><a target="_blank" href="http://clip.alpslab.jp/bin/rd?adr=$adr"><img class="alpslab-clip" src="http://clip.alpslab.jp/bin/map?adr=$adr&opt=$opt" alt="$str" title="$str" /></a></p>];
 }
