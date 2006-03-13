@@ -17,7 +17,7 @@ use base 'MT::Plugin';
 use vars qw($VERSION);
 
 sub BEGIN {
-    $VERSION = '0.10 ($Rev$)';
+    $VERSION = '0.10';
     my $plugin = MT::Plugin::Mapper->new({
 	name => 'Mapper',
 	version => $VERSION,
@@ -125,7 +125,7 @@ sub resolve_address {
 }
 
 my $preamble_tmpl = <<'EOT';
-<script type="text/javascript" src="http://maps.google.com/maps?<TMPL_IF NAME="language">hl=<TMPL_VAR NAME="language">&</TMPL_IF>file=api&v=1&key=<TMPL_VAR NAME="google_maps_key">" charset="utf-8"></script>
+<script type="text/javascript" src="http://maps.google.com/maps?<TMPL_IF NAME="language">hl=<TMPL_VAR NAME="language">&amp;</TMPL_IF>file=api&amp;v=1&amp;key=<TMPL_VAR NAME="google_maps_key">" charset="utf-8"></script>
 <script type="text/javascript">
 //<![CDATA[
 function attachOnLoad(func) {
@@ -231,10 +231,10 @@ sub generate {
 	$pos = $str;
     }
     if ($pos) {
-	return qq[<p><a target="_blank" href="http://clip.alpslab.jp/bin/rd?pos=$pos"><img class="alpslab-clip" src="http://clip.alpslab.jp/bin/map?pos=$pos&opt=$opt" alt="$str" title="$str" /></a></p>];
+	return qq[<p><a target="_blank" href="http://clip.alpslab.jp/bin/rd?pos=$pos"><img class="alpslab-clip" src="http://clip.alpslab.jp/bin/map?pos=$pos&amp;opt=$opt" alt="$str" title="$str" /></a></p>];
     }
 
     my $adr = MT::I18N::encode_text($str, '', 'euc-jp') || '';
     $adr = MT::Util::encode_url($adr);
-    qq[<p><a target="_blank" href="http://clip.alpslab.jp/bin/rd?adr=$adr"><img class="alpslab-clip" src="http://clip.alpslab.jp/bin/map?adr=$adr&opt=$opt" alt="$str" title="$str" /></a></p>];
+    qq[<p><a target="_blank" href="http://clip.alpslab.jp/bin/rd?adr=$adr"><img class="alpslab-clip" src="http://clip.alpslab.jp/bin/map?adr=$adr&amp;opt=$opt" alt="$str" title="$str" /></a></p>];
 }
