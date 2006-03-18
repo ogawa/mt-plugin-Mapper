@@ -17,7 +17,7 @@ use base 'MT::Plugin';
 use vars qw($VERSION);
 
 sub BEGIN {
-    $VERSION = '0.10';
+    $VERSION = '0.11';
     my $plugin = MT::Plugin::Mapper->new({
 	name => 'Mapper',
 	version => $VERSION,
@@ -90,10 +90,15 @@ sub DESTROY { }
 sub generate {
     my $this = shift;
     my($s) = @_;
-    my($adr, $opt) = split(/:/, $s);
+    $s =~ s/^\s+//;
+    $s =~ s/\s+$//;
+    my($str, $opt) = split(/:/, $s);
+    my $adr = $str;
+    $adr =~ s/\(.*\)//ge;
     $adr =~ s/^\s+//;
     $adr =~ s/\s+$//;
-    my ($lat, $lon);
+
+    my($lat, $lon);
     if ($adr =~ m!^x([-.\d]+)y([-.\d]+)$!) {		# map:x<lon>y<lat>
 	($lat, $lon) = ($2, $1);
     } elsif ($adr =~ m!^([-.\d]+),\s*([-.\d]+)$!) {	# map:<lat>,<lon>
@@ -104,7 +109,7 @@ sub generate {
     }
     my $res = '';
     $res .= $this->preamble unless $this->{count};
-    $res .= $this->body($lat, $lon, $adr);
+    $res .= $this->body($lat, $lon, $str);
     $this->{count}++;
     $res;
 }
@@ -223,18 +228,22 @@ sub generate {
     $s =~ s/^\s+//;
     $s =~ s/\s+$//;
     my($str, $opt) = split(/:/, $s);
+    my $adr = $str;
+    $adr =~ s/\(.*\)//ge;
+    $adr =~ s/^\s+//;
+    $adr =~ s/\s+$//;
 
     my $pos = '';
-    if ($str =~ m!^x([-.\d]+)y([-.\d]+)$!) {		# map:x<lon>y<lat>
+    if ($adr =~ m!^x([-.\d]+)y([-.\d]+)$!) {		# map:x<lon>y<lat>
 	$pos = "$2,$1";
-    } elsif ($str =~ m!^([-.\d]+),\s*([-.\d]+)$!) {	# map:<lat>,<lon>
-	$pos = $str;
+    } elsif ($adr =~ m!^([-.\d]+),\s*([-.\d]+)$!) {	# map:<lat>,<lon>
+	$pos = $adr;
     }
     if ($pos) {
 	return qq[<p><a target="_blank" href="http://clip.alpslab.jp/bin/rd?pos=$pos"><img class="alpslab-clip" src="http://clip.alpslab.jp/bin/map?pos=$pos&amp;opt=$opt" alt="$str" title="$str" /></a></p>];
     }
 
-    my $adr = MT::I18N::encode_text($str, '', 'euc-jp') || '';
+    $adr = MT::I18N::encode_text($adr, '', 'euc-jp') || '';
     $adr = MT::Util::encode_url($adr);
     qq[<p><a target="_blank" href="http://clip.alpslab.jp/bin/rd?adr=$adr"><img class="alpslab-clip" src="http://clip.alpslab.jp/bin/map?adr=$adr&amp;opt=$opt" alt="$str" title="$str" /></a></p>];
 }
