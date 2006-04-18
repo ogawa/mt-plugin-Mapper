@@ -130,7 +130,7 @@ sub resolve_address {
 }
 
 my $preamble_tmpl = <<'EOT';
-<script type="text/javascript" src="http://maps.google.com/maps?<TMPL_IF NAME="language">hl=<TMPL_VAR NAME="language">&amp;</TMPL_IF>file=api&amp;v=1&amp;key=<TMPL_VAR NAME="google_maps_key">" charset="utf-8"></script>
+<script type="text/javascript" src="http://maps.google.com/maps?<TMPL_IF NAME="language">hl=<TMPL_VAR NAME="language">&amp;</TMPL_IF>file=api&amp;v=2&amp;key=<TMPL_VAR NAME="google_maps_key">" charset="utf-8"></script>
 <script type="text/javascript">
 //<![CDATA[
 function attachOnLoad(func) {
@@ -138,23 +138,15 @@ function attachOnLoad(func) {
     window.onload = (typeof old != 'function') ?
 	func : function(e) { old(e); return func(e); };
 }
-function generateGMap(mapid, address, latitude, longitude, maptype, zoom) {
+function generateGMap(mapid, address, lat, lng, zoom, maptype) {
     if (GBrowserIsCompatible()) {
-	var icon = new GIcon();
-	icon.image = "http://www.google.com/mapfiles/marker.png";
-	icon.shadow = "http://www.google.com/mapfiles/shadow50.png";
-	icon.iconSize = new GSize(20, 34);
-	icon.shadowSize = new GSize(37, 34);
-	icon.iconAnchor = new GPoint(6, 20);
-	icon.infoWindowAnchor = new GPoint(5, 1);
-
-	var map = new GMap(document.getElementById(mapid));
-	map.setMapType((typeof maptype == 'string') ? eval(maptype) : maptype);
+	var map = new GMap2(document.getElementById(mapid));
 	map.addControl(new GSmallMapControl());
 	map.addControl(new GMapTypeControl());
-	var point = new GPoint(longitude, latitude);
-	map.centerAndZoom(point, zoom);
-	var marker = new GMarker(point, icon);
+	var center = new GLatLng(lat, lng);
+	if (typeof maptype == 'string') maptype = eval(maptype);
+	map.setCenter(center, zoom, maptype);
+	var marker = new GMarker(center, G_DEFAULT_ICON);
 	map.addOverlay(marker);
 	var html = '<div style="width:12em;font-size:small">'+address+'</div>';
 	GEvent.addListener(marker, 'click', function() {
@@ -183,7 +175,7 @@ my $body_tmpl = <<'EOT';
 <script type="text/javascript">
 //<![CDATA[
 attachOnLoad(function() {
-    generateGMap('<TMPL_VAR NAME="mapid">','<TMPL_VAR NAME="address">',<TMPL_VAR NAME="latitude">,<TMPL_VAR NAME="longitude">,'<TMPL_VAR NAME="maptype">',<TMPL_VAR NAME="zoom">);
+    generateGMap('<TMPL_VAR NAME="mapid">','<TMPL_VAR NAME="address">',<TMPL_VAR NAME="latitude">,<TMPL_VAR NAME="longitude">,<TMPL_VAR NAME="zoom">,'<TMPL_VAR NAME="maptype">');
 });
 //]]>
 </script>
@@ -200,8 +192,8 @@ sub body {
 		 latitude => $lat,
 		 longitude => $lon,
 		 address => $adr,
-		 maptype => $this->{maptype} || 'G_MAP_TYPE',
-		 zoom => (defined $this->{zoom}) ? $this->{zoom} : 4
+		 maptype => $this->{maptype} || 'G_NORMAL_MAP',
+		 zoom => (defined $this->{zoom}) ? $this->{zoom} : 13
 		 );
     $tmpl->output;
 }
