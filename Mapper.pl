@@ -22,7 +22,7 @@ sub BEGIN {
 	name => 'Mapper',
 	version => $VERSION,
 	description => 'This plugin enables MTMapper container tag, which converts "[map:address-description]" string into an embeded map provided by mapping services such as Google Maps.',
-	doc_link => 'http://as-is.net/blog/archives/1108.html',
+	doc_link => 'http://as-is.net/wiki/Mapper_Plugin',
 	author_name => 'Hirotaka Ogawa',
 	author_link => 'http://profile.typekey.com/ogawa/',
 	blog_config_template => \&blog_config_template,
