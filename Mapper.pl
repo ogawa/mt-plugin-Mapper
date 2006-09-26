@@ -14,22 +14,21 @@ use MT;
 use MT::Template::Context;
 use MT::ConfigMgr;
 use base 'MT::Plugin';
-use vars qw($VERSION);
 
 sub BEGIN {
-    $VERSION = '0.11';
+    our $VERSION = '0.12';
     my $plugin = MT::Plugin::Mapper->new({
 	name => 'Mapper',
 	version => $VERSION,
 	description => 'This plugin enables MTMapper container tag, which converts "[map:address-description]" string into an embeded map provided by mapping services such as Google Maps.',
-	doc_link => 'http://as-is.net/wiki/Mapper_Plugin',
+	doc_link => 'http://code.as-is.net/wiki/Mapper_Plugin',
 	author_name => 'Hirotaka Ogawa',
 	author_link => 'http://profile.typekey.com/ogawa/',
 	blog_config_template => \&blog_config_template,
 	settings => new MT::PluginSettings([
-					    ['google_maps_key', { Default => '' }]
-					    ])
-	});
+	    ['google_maps_key', { Default => '' }]
+	]),
+    });
     MT->add_plugin($plugin);
     MT::Template::Context->add_container_tag(Mapper => sub { $plugin->mapper(@_) });
 }
@@ -59,7 +58,7 @@ sub blog_config_template {
     my $tmpl = <<'EOT';
 <p>This plugin enables MTMapper container tag, which converts "[map:address-description]" string into an embeded map provided by mapping services such as Google Maps.</p>
 
-<p>For more details, see <a href="http://as-is.net/blog/archives/001108.html">"MTMapper Plugin - Ogawa::Memoranda"</a>.</p>
+<p>For more details, see <a href="http://code.as-is.net/wiki/Mapper_Plugin">"Mapper Plugin"</a>.</p>
 
 <div class="setting">
 <div class="label"><label for="google_maps_key">Google Maps API Key:</label></div>
@@ -134,9 +133,10 @@ my $preamble_tmpl = <<'EOT';
 <script type="text/javascript">
 //<![CDATA[
 function attachOnLoad(func) {
-    var old = window.onload;
-    window.onload = (typeof old != 'function') ?
-	func : function(e) { old(e); return func(e); };
+    if (window.addEventListener)
+	window.addEventListener('load',func,false);
+    else if (window.attachEvent)
+	window.attachEvent('onload',func);
 }
 function generateGMap(mapid, address, lat, lng, zoom, maptype) {
     if (GBrowserIsCompatible()) {
@@ -193,7 +193,7 @@ sub body {
 		 longitude => $lon,
 		 address => $adr,
 		 maptype => $this->{maptype} || 'G_NORMAL_MAP',
-		 zoom => (defined $this->{zoom}) ? $this->{zoom} : 13
+		 zoom => (defined $this->{zoom}) ? $this->{zoom} : 15
 		 );
     $tmpl->output;
 }
