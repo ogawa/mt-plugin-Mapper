@@ -133,10 +133,14 @@ my $preamble_tmpl = <<'EOT';
 <script type="text/javascript">
 //<![CDATA[
 function attachOnLoad(func) {
-    if (window.addEventListener)
+    window.attachEvent ?
+	window.attachEvent('onload',func) : 
 	window.addEventListener('load',func,false);
-    else if (window.attachEvent)
-	window.attachEvent('onload',func);
+}
+function attachBeforeUnload(func) {
+    window.attachEvent ?
+	window.attachEvent('onbeforeunload',func) : 
+	window.addEventListener('beforeunload',func,false);
 }
 function generateGMap(mapid, address, lat, lng, zoom, maptype) {
     if (GBrowserIsCompatible()) {
@@ -156,6 +160,7 @@ function generateGMap(mapid, address, lat, lng, zoom, maptype) {
 	document.getElementById(mapid).innerHTML = '<p>The Google Map that should be displayed on this page is not compatible with your browser. Sorry.</p>';
     }
 }
+attachBeforeUnload(function(){GUnload()});
 //]]>
 </script>
 EOT
