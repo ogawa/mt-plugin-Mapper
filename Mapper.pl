@@ -15,7 +15,6 @@ use MT::Template::Context;
 use MT::ConfigMgr;
 use base 'MT::Plugin';
 
-sub BEGIN {
     our $VERSION = '0.12';
     my $plugin = MT::Plugin::Mapper->new({
 	name => 'Mapper',
@@ -31,7 +30,6 @@ sub BEGIN {
     });
     MT->add_plugin($plugin);
     MT::Template::Context->add_container_tag(Mapper => sub { $plugin->mapper(@_) });
-}
 
 sub mapper {
     my $plugin = shift;
