@@ -127,38 +127,28 @@ sub resolve_address {
 }
 
 my $preamble_tmpl = <<'EOT';
-<script type="text/javascript" src="http://maps.google.com/maps?<TMPL_IF NAME="language">hl=<TMPL_VAR NAME="language">&amp;</TMPL_IF>file=api&amp;v=2&amp;key=<TMPL_VAR NAME="google_maps_key">" charset="utf-8"></script>
+<script type="text/javascript" src="http://www.google.com/jsapi?key=<TMPL_VAR NAME="google_maps_key">"></script>
 <script type="text/javascript">
 //<![CDATA[
-function attachOnLoad(func) {
-    window.attachEvent ?
-	window.attachEvent('onload',func) : 
-	window.addEventListener('load',func,false);
-}
-function attachBeforeUnload(func) {
-    window.attachEvent ?
-	window.attachEvent('onbeforeunload',func) : 
-	window.addEventListener('beforeunload',func,false);
-}
+google.load('maps', '2'<TMPL_IF NAME="language">, { 'language': '<TMPL_VAR NAME="language">' }</TMPL_IF>);
 function generateGMap(mapid, address, lat, lng, zoom, maptype) {
-    if (GBrowserIsCompatible()) {
-	var map = new GMap2(document.getElementById(mapid));
-	map.addControl(new GSmallMapControl());
-	map.addControl(new GMapTypeControl());
-	var center = new GLatLng(lat, lng);
+    if (google.maps.GBrowserIsCompatible()) {
+	var map = new google.maps.GMap2(document.getElementById(mapid));
+	map.addControl(new google.maps.GSmallMapControl());
+	map.addControl(new google.maps.GMapTypeControl());
+	var center = new google.maps.GLatLng(lat, lng);
 	if (typeof maptype == 'string') maptype = eval(maptype);
 	map.setCenter(center, zoom, maptype);
-	var marker = new GMarker(center, G_DEFAULT_ICON);
+	var marker = new google.maps.GMarker(center, G_DEFAULT_ICON);
 	map.addOverlay(marker);
 	var html = '<div style="width:12em;font-size:small">'+address+'</div>';
-	GEvent.addListener(marker, 'click', function() {
+	google.maps.GEvent.addListener(marker, 'click', function() {
 	    marker.openInfoWindowHtml(html);
 	});
     } else {
 	document.getElementById(mapid).innerHTML = '<p>The Google Map that should be displayed on this page is not compatible with your browser. Sorry.</p>';
     }
 }
-attachBeforeUnload(function(){GUnload()});
 //]]>
 </script>
 EOT
@@ -177,7 +167,7 @@ my $body_tmpl = <<'EOT';
 <div id="<TMPL_VAR NAME="mapid">" style="width:<TMPL_VAR NAME="width">;height:<TMPL_VAR NAME="height">;" class="adr"><TMPL_VAR NAME="address"></div>
 <script type="text/javascript">
 //<![CDATA[
-attachOnLoad(function() {
+google.setOnLoadCallback(function() {
     generateGMap('<TMPL_VAR NAME="mapid">','<TMPL_VAR NAME="address">',<TMPL_VAR NAME="latitude">,<TMPL_VAR NAME="longitude">,<TMPL_VAR NAME="zoom">,'<TMPL_VAR NAME="maptype">');
 });
 //]]>
