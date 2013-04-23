@@ -88,7 +88,7 @@ adr microformatライク:
 
 このコードは以下のようなGoogle Mapsによる地図を描画します。
 
-![](http://ogawa.googlecode.com/svn/wiki/images/Mapper-Example.jpg)
+![](images/Mapper-Example.jpg)
 
 Alps Clip!・はてなマップライクのmapタグを利用する場合に&lt;p&gt;…&lt;/p&gt;、&lt;div&gt;…&lt;/div&gt;で囲まれていることを必須にしたのは、意図しない変換、例えばMTEntryTrackbackDataに対する変換、を抑制するためです。ちなみにMovable Typeの「改行を変換する」機能を利用している場合には、以下のように本文とmapタグの間に空行を置けば、自動的に&lt;p&gt;…&lt;/p&gt;で囲まれたmapタグを生成することができます。
 
